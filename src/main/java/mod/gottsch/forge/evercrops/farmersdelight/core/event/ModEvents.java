@@ -28,7 +28,10 @@ import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import vectorwing.farmersdelight.common.block.BuddingBushBlock;
+import vectorwing.farmersdelight.common.block.MushroomColonyBlock;
+import vectorwing.farmersdelight.common.block.OrganicCompostBlock;
 import vectorwing.farmersdelight.common.block.RiceBlock;
+import vectorwing.farmersdelight.common.block.RichSoilBlock;
 import vectorwing.farmersdelight.common.block.TomatoBlock;
 
 /**
@@ -68,16 +71,34 @@ public class ModEvents {
      * FD blocks tracked by this mod. Mirrors the set of mixins in this mod.
      * CabbageBlock, OnionBlock, and RicePaniclesBlock are CropBlock subclasses and
      * are tracked by EverCrops's own ModEvents — no need to handle them here.
+     *
+     * TomatoBlock: both ground tomatoes (ROPELOGGED=false) and HangingTomatoBlock (FD 1.3+,
+     * no ROPELOGGED property) are tracked. Only old-style ROPELOGGED=true states are excluded
+     * — that is a deprecated back-compat state; HangingTomatoBlock is the live rope-climbing path.
+     *
+     * New in v1.1.0:
+     * - OrganicCompostBlock: COMPOSTING property (0-7 → Rich Soil transformation).
+     * - RichSoilBlock: no age property; tracked for mushroom-to-colony catch-up.
+     * - MushroomColonyBlock: COLONY_AGE property (0-3). Uses tick() in FD 1.20.1.
      */
     private static boolean isTracked(BlockState state) {
         Block block = state.getBlock();
+        // Track ground tomatoes (ROPELOGGED=false) and HangingTomatoBlock (no ROPELOGGED property).
+        // Skip only old-style ROPELOGGED=true blocks; those are a deprecated back-compat state.
+        // HangingTomatoBlock is placed programmatically (climbRopeAbove/setBlockAndUpdate), so
+        // EntityPlaceEvent does not fire for it — the mixin's first-tick fallback handles that case.
         if (block instanceof TomatoBlock
                 && state.hasProperty(TomatoBlock.VINE_AGE)
-                && !state.getValue(TomatoBlock.ROPELOGGED)) return true;
+                && (!state.hasProperty(TomatoBlock.ROPELOGGED) || !state.getValue(TomatoBlock.ROPELOGGED))) return true;
         if (block instanceof BuddingBushBlock
                 && state.hasProperty(BuddingBushBlock.AGE)) return true;
         if (block instanceof RiceBlock
                 && state.hasProperty(RiceBlock.AGE)) return true;
+        if (block instanceof OrganicCompostBlock
+                && state.hasProperty(OrganicCompostBlock.COMPOSTING)) return true;
+        if (block instanceof RichSoilBlock) return true;
+        if (block instanceof MushroomColonyBlock
+                && state.hasProperty(MushroomColonyBlock.COLONY_AGE)) return true;
         return false;
     }
 }

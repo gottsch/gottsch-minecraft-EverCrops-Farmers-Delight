@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-5-26
+
+### Added
+
+- Catch-up growth for **organic compost** — the block now advances through its composting stages (and converts to rich soil) based on how long the chunk was unloaded. The speed depends on nearby compost activators, water, and skylight, just like normal growth does.
+- Catch-up growth for **mushroom colonies** — colonies now age through their four growth stages during time away, the same as other crops. Brown and red mushroom colonies are both supported.
+- Catch-up conversion on **rich soil** — if a brown or red mushroom was sitting on rich soil when the area unloaded, the mushroom converts to a colony the next time the chunk loads (as it would have during normal play).
+
+### Fixed
+
+- Fixed a game freeze (server deadlock) that occurred when ropes were placed above tomato
+  plants and the tomato climbed onto them. The game would lock up a short time after
+  the climb started and had to be force-killed. Caused by Farmer's Delight 1.3.0's new
+  rope-climbing tomato block inheriting code from the base tomato block without carrying
+  over all of the same block properties.
+- Fixed tomato catch-up silently not working at all since 1.0.0. Tomatoes were never
+  registered when placed, so every tick was a no-op. Tomato catch-up now works correctly.
+- Tomatoes climbing ropes now also catch up while the area is unloaded. Each rope segment
+  the tomato has grown to will advance through its age stages just like a ground tomato does.
+
 ## [1.0.0] - 2026-5-10
 
 ### Added
