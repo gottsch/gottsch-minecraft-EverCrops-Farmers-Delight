@@ -17,6 +17,7 @@
  */
 package mod.gottsch.forge.evercrops.farmersdelight;
 
+import mod.gottsch.forge.evercrops.farmersdelight.core.event.ModEvents;
 import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,5 +33,6 @@ public class EverCropsFD {
     public static final String MOD_ID = "evercrops_farmersdelight";
 
     public EverCropsFD() {
+        ModEvents.registerPredicates();
     }
 }

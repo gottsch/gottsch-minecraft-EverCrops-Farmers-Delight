@@ -53,7 +53,7 @@ public abstract class BuddingBushBlockMixin extends BushBlock {
         super(properties);
     }
 
-    @Inject(method = "randomTick", at = @At("HEAD"))
+    @Inject(method = "randomTick", at = @At("HEAD"), cancellable = true)
     public void everCropsFD_randomTick(BlockState state, ServerLevel level, BlockPos pos,
                                        RandomSource random, CallbackInfo ci) {
         if (!state.hasProperty(BuddingBushBlock.AGE)) return;
@@ -65,19 +65,27 @@ public abstract class BuddingBushBlockMixin extends BushBlock {
         }
         CropState cropState = existing.get();
         int steps = CropCatchUp.beginCatchUp(level, pos, cropState, AVG_GROWTH_TICK_INTERVAL, true);
+        boolean grewAny = false;
         if (steps > 0) {
             BlockState currentState = state;
             for (int i = 0; i < steps; i++) {
                 int age = currentState.getValue(BuddingBushBlock.AGE);
                 // Stop at MAX_AGE-1; vanilla randomTick handles growPastMaxAge() transition.
-                if (age >= BuddingBushBlock.MAX_AGE) return;
-                if (!ForgeHooks.onCropsGrowPre(level, pos, currentState, true)) return;
+                if (age >= BuddingBushBlock.MAX_AGE) break;
+                if (!ForgeHooks.onCropsGrowPre(level, pos, currentState, true)) break;
                 currentState = currentState.setValue(BuddingBushBlock.AGE, age + 1);
                 level.setBlock(pos, currentState, 2);
                 ForgeHooks.onCropsGrowPost(level, pos, currentState);
+                grewAny = true;
             }
         }
         CropRegistry.put(level, pos, cropState);
+        // Catch-up advanced the seedling this tick. Skip vanilla's own randomTick so it
+        // can't overwrite the caught-up age nor double-write the growth timestamp. The
+        // growPastMaxAge() transition still runs on the next natural random tick.
+        if (grewAny) {
+            ci.cancel();
+        }
     }
 
     @Inject(method = "randomTick", at = @At(value = "INVOKE",
