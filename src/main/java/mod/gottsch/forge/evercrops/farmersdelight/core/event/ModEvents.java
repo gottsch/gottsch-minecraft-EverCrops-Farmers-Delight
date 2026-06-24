@@ -17,9 +17,7 @@
  */
 package mod.gottsch.forge.evercrops.farmersdelight.core.event;
 
-import mod.gottsch.forge.evercrops.core.persistence.CropBlockPredicates;
-import mod.gottsch.forge.evercrops.core.persistence.CropCatchUp;
-import mod.gottsch.forge.evercrops.core.persistence.CropRegistry;
+import mod.gottsch.forge.evercrops.api.EverCropsApi;
 import mod.gottsch.forge.evercrops.farmersdelight.EverCropsFD;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -49,7 +47,7 @@ public class ModEvents {
      * so registration is guaranteed before any game events fire.
      */
     public static void registerPredicates() {
-        CropBlockPredicates.register(ModEvents::isTracked);
+        EverCropsApi.registerCleanupPredicate(ModEvents::isTracked);
     }
 
     /**
@@ -62,7 +60,7 @@ public class ModEvents {
         if (!isTracked(state)) return;
         ServerLevel serverLevel = (ServerLevel) event.getLevel();
         BlockPos pos = event.getPos();
-        CropRegistry.put(serverLevel, pos, CropCatchUp.createState(serverLevel, pos));
+        EverCropsApi.put(serverLevel, pos, EverCropsApi.createState(serverLevel, pos));
     }
 
     /**
@@ -73,7 +71,7 @@ public class ModEvents {
         if (event.getLevel().isClientSide()) return;
         BlockState state = event.getState();
         if (isTracked(state)) {
-            CropRegistry.remove((ServerLevel) event.getLevel(), event.getPos());
+            EverCropsApi.remove((ServerLevel) event.getLevel(), event.getPos());
         }
     }
 
