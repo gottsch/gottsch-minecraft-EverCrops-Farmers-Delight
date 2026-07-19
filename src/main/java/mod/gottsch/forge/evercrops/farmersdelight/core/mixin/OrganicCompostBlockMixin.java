@@ -17,9 +17,8 @@
  */
 package mod.gottsch.forge.evercrops.farmersdelight.core.mixin;
 
-import mod.gottsch.forge.evercrops.core.persistence.CropCatchUp;
-import mod.gottsch.forge.evercrops.core.persistence.CropRegistry;
-import mod.gottsch.forge.evercrops.core.persistence.CropState;
+import mod.gottsch.forge.evercrops.api.CropState;
+import mod.gottsch.forge.evercrops.api.EverCropsApi;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
@@ -76,9 +75,9 @@ public abstract class OrganicCompostBlockMixin extends Block {
                                        RandomSource random, CallbackInfo ci) {
         if (!state.hasProperty(OrganicCompostBlock.COMPOSTING)) return;
 
-        Optional<CropState> existing = CropRegistry.get(level, pos);
+        Optional<CropState> existing = EverCropsApi.get(level, pos);
         if (existing.isEmpty()) {
-            CropRegistry.put(level, pos, CropCatchUp.createState(level, pos));
+            EverCropsApi.put(level, pos, EverCropsApi.createState(level, pos));
             return;
         }
         CropState cropState = existing.get();
@@ -87,12 +86,12 @@ public abstract class OrganicCompostBlockMixin extends Block {
         // average interval. Mirrors the chance formula inside OrganicCompostBlock.randomTick.
         float chance = everCropsFD_computeChance(level, pos);
         if (chance <= 0.0F) {
-            CropRegistry.put(level, pos, cropState);
+            EverCropsApi.put(level, pos, cropState);
             return;
         }
-        int avgGrowthInterval = Math.max(1, (int) (CropCatchUp.AVG_CALL_TICK_INTERVAL / chance));
+        int avgGrowthInterval = Math.max(1, (int) (EverCropsApi.AVG_CALL_TICK_INTERVAL / chance));
 
-        int steps = CropCatchUp.beginCatchUp(level, pos, cropState, avgGrowthInterval, false);
+        int steps = EverCropsApi.beginCatchUp(level, pos, cropState, avgGrowthInterval, false);
         if (steps > 0) {
             int currentStage = state.getValue(OrganicCompostBlock.COMPOSTING);
             OrganicCompostBlock self = (OrganicCompostBlock)(Object) this;
@@ -108,10 +107,10 @@ public abstract class OrganicCompostBlockMixin extends Block {
                 // Partially advance the composting stage.
                 level.setBlock(pos, state.setValue(OrganicCompostBlock.COMPOSTING, currentStage + steps), 3);
             }
-            CropRegistry.put(level, pos, cropState);
+            EverCropsApi.put(level, pos, cropState);
             ci.cancel();
         } else {
-            CropRegistry.put(level, pos, cropState);
+            EverCropsApi.put(level, pos, cropState);
         }
     }
 
@@ -151,11 +150,11 @@ public abstract class OrganicCompostBlockMixin extends Block {
             target = "Lnet/minecraft/server/level/ServerLevel;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"))
     public void everCropsFD_randomTick_setBlock(BlockState state, ServerLevel level, BlockPos pos,
                                                 RandomSource random, CallbackInfo ci) {
-        Optional<CropState> cropState = CropRegistry.get(level, pos);
+        Optional<CropState> cropState = EverCropsApi.get(level, pos);
         if (cropState.isPresent()) {
             cropState.get().setLastGrowthGameTime(level.getGameTime())
                     .setLastGrowthLightLevel(level.getRawBrightness(pos, 0));
-            CropRegistry.put(level, pos, cropState.get());
+            EverCropsApi.put(level, pos, cropState.get());
         }
         // CropState is intentionally left in place even when vanilla transforms to Rich Soil;
         // RichSoilBlockMixin will adopt it on the first tick of the new block.
